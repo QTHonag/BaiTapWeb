@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Lịch sử đơn hàng - Cửa hàng Âm thanh</title>
+    <link rel="stylesheet" href="../css/bootstrap.min.css" />
+    <script src="../js/jquery-3.7.1.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; background-color: #f9f9f9; }
+
+      header { background-color: #726e6b; }
+      .banner img { width: 100%; display: block; }
+
+      nav {
+        background-color: #726e6b;
+        position: relative;
+        height: 50px;
+      }
+      .nav-center {
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        top: 50%;
+        display: flex;
+        gap: 20px;
+      }
+      .nav-right {
+        position: absolute;
+        right: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        gap: 18px;
+      }
+      nav a {
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 16px;
+      }
+      nav a:hover {
+        text-decoration: underline;
+      }
+
+      main { padding: 40px; }
+
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+
+      .order {
+        background: #fff;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 700px;
+        border-radius: 10px;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+
+      .order p { margin: 5px 0; color: #555; }
+
+      .empty {
+        text-align: center;
+        font-size: 18px;
+        color: #777;
+        margin-top: 50px;
+      }
+
+      .delete-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        color: red;
+        font-weight: bold;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      #confirm-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 25px 30px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        display: none;
+        z-index: 1001;
+        text-align: center;
+        max-width: 90%;
+      }
+
+      #confirm-popup button {
+        padding: 10px 20px;
+        margin: 0 5px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      #confirm-delete-btn {
+        background-color: #e53935;
+        color: white;
+      }
+
+      #cancel-delete-btn {
+        background-color: #888;
+        color: white;
+      }
+
+      /* Popup đăng ký / đăng nhập */
+      #register-popup,
+      #login-popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 30px 40px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        z-index: 999;
+        width: 90%;
+        max-width: 400px;
+      }
+
+      #register-popup input,
+      #login-popup input {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      #register-popup button,
+      #login-popup button {
+        padding: 10px;
+        width: 100%;
+        border: none;
+        border-radius: 5px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .submit-btn {
+        background-color: #2196f3;
+        color: white;
+        margin-top: 10px;
+      }
+      .cancel-btn {
+        background-color: #ccc;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="banner">
+        <img src="../img/banner.png" alt="Banner cửa hàng" />
+      </div>
+      <nav>
+        <div class="nav-center">
+          <a href="index.html">Trang chủ</a>
+          <a href="store.html">Gian hàng</a>
+          <a href="cart.html">Giỏ hàng</a>
+          <a href="history.html">Lịch sử</a>
+        </div>
+        <div class="nav-right">
+          <a href="#" onclick="openRegister()" id="register-link">Đăng ký</a>
+          <a href="#" onclick="openLogin()" id="login-link">Đăng nhập</a>
+          <span id="user-name" style="color: #fff; font-weight: bold; display: none"></span>
+          <a href="#" id="logout-link" style="color: #fff; display: none" onclick="logout()">Đăng xuất</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <h1>Lịch sử đơn hàng</h1>
+      <div id="order-history"></div>
+    </main>
+
+    <!-- Popup xác nhận -->
+    <div id="confirm-popup">
+      <p style="margin-bottom: 20px;">Bạn có chắc muốn xóa đơn hàng này không?</p>
+      <button id="confirm-delete-btn">Xác nhận</button>
+      <button id="cancel-delete-btn" onclick="hideConfirm()">Hủy</button>
+    </div>
+
+    <!-- Popup đăng ký -->
+    <div id="register-popup">
+      <h2 style="text-align: center">Đăng ký tài khoản</h2>
+      <input type="text" id="reg-username" placeholder="Tên đăng nhập" />
+      <input type="email" id="reg-email" placeholder="Email" />
+      <input type="tel" id="reg-phone" placeholder="Số điện thoại" />
+      <input type="password" id="reg-password" placeholder="Mật khẩu" />
+      <button class="submit-btn" onclick="submitRegister()">Đăng ký</button>
+      <button class="cancel-btn" onclick="closeRegister()">Hủy</button>
+    </div>
+
+    <!-- Popup đăng nhập -->
+    <div id="login-popup">
+      <h2 style="text-align: center">Đăng nhập</h2>
+      <input type="text" id="login-username" placeholder="Tên đăng nhập" />
+      <input type="password" id="login-password" placeholder="Mật khẩu" />
+      <button class="submit-btn" onclick="submitLogin()">Đăng nhập</button>
+      <button class="cancel-btn" onclick="closeLogin()">Hủy</button>
+    </div>
+
+    <script>
+      const historyContainer = document.getElementById("order-history");
+      let deleteIndex = null;
+
+      function renderHistory() {
+        const history = JSON.parse(localStorage.getItem("history")) || [];
+        historyContainer.innerHTML = "";
+
+        if (history.length === 0) {
+          historyContainer.innerHTML = `<div class="empty">Chưa có đơn hàng nào.</div>`;
+        } else {
+          history.forEach((order, index) => {
+            const div = document.createElement("div");
+            div.className = "order";
+            div.innerHTML = `
+              <h3>Đơn hàng #${index + 1}</h3>
+              <p><strong>Ngày:</strong> ${order.date}</p>
+              <p><strong>Địa chỉ:</strong> ${order.address}</p>
+              <p><strong>Tổng tiền:</strong> ${order.total.toLocaleString()}₫</p>
+              <p><strong>Phương thức thanh toán:</strong> ${order.method}</p>
+              <p><strong>Sản phẩm:</strong><br> ${order.items
+                .map((i) => `- ${i.name} x${i.quantity}`)
+                .join("<br>")}
+              </p>
+              <button class="delete-btn" onclick="showConfirm(${index})">Xóa</button>
+            `;
+            historyContainer.appendChild(div);
+          });
+        }
+      }
+
+      function showConfirm(index) {
+        deleteIndex = index;
+        document.getElementById("confirm-popup").style.display = "block";
+      }
+
+      function hideConfirm() {
+        deleteIndex = null;
+        document.getElementById("confirm-popup").style.display = "none";
+      }
+
+      document.getElementById("confirm-delete-btn").addEventListener("click", () => {
+        if (deleteIndex !== null) {
+          let history = JSON.parse(localStorage.getItem("history")) || [];
+          history.splice(deleteIndex, 1);
+          localStorage.setItem("history", JSON.stringify(history));
+          renderHistory();
+          hideConfirm();
+        }
+      });
+
+      function openRegister() {
+        document.getElementById("register-popup").style.display = "block";
+      }
+
+      function closeRegister() {
+        document.getElementById("register-popup").style.display = "none";
+      }
+
+      function openLogin() {
+        document.getElementById("login-popup").style.display = "block";
+      }
+
+      function closeLogin() {
+        document.getElementById("login-popup").style.display = "none";
+      }
+
+      function submitRegister() {
+        const username = document.getElementById("reg-username").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
+        const phone = document.getElementById("reg-phone").value.trim();
+        const password = document.getElementById("reg-password").value;
+
+        if (!username || !email || !phone || !password) {
+          alert("Vui lòng điền đầy đủ thông tin.");
+          return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          alert("Email không hợp lệ.");
+          return;
+        }
+
+        const phoneRegex = /^0\d{9}$/;
+        if (!phoneRegex.test(phone)) {
+          alert("Số điện thoại không hợp lệ.");
+          return;
+        }
+
+        let users = JSON.parse(localStorage.getItem("users")) || [];
+        if (users.find((u) => u.username === username)) {
+          alert("Tên đăng nhập đã tồn tại.");
+          return;
+        }
+
+        users.push({ username, email, phone, password });
+        localStorage.setItem("users", JSON.stringify(users));
+
+        alert(`Đăng ký thành công!\nChào mừng, ${username}!`);
+        closeRegister();
+      }
+
+      function submitLogin() {
+        const username = document.getElementById("login-username").value.trim();
+        const password = document.getElementById("login-password").value;
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+
+        const user = users.find(
+          (u) => u.username === username && u.password === password
+        );
+
+        if (user) {
+          alert(`Đăng nhập thành công!\nChào mừng trở lại, ${username}!`);
+          localStorage.setItem("loggedInUser", username);
+          updateUI(username);
+          closeLogin();
+        } else {
+          alert("Tên đăng nhập hoặc mật khẩu không đúng.");
+        }
+      }
+
+      function updateUI(username) {
+        document.getElementById("login-link").style.display = "none";
+        document.getElementById("register-link").style.display = "none";
+        document.getElementById("user-name").style.display = "inline";
+        document.getElementById("logout-link").style.display = "inline";
+        document.getElementById("user-name").textContent = username;
+      }
+
+      function logout() {
+        localStorage.removeItem("loggedInUser");
+        document.getElementById("login-link").style.display = "inline";
+        document.getElementById("register-link").style.display = "inline";
+        document.getElementById("user-name").style.display = "none";
+        document.getElementById("logout-link").style.display = "none";
+      }
+
+      window.onload = () => {
+        const username = localStorage.getItem("loggedInUser");
+        if (username) updateUI(username);
+        renderHistory();
+      };
+    </script>
+  </body>
+</html>
